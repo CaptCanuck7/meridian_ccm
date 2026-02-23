@@ -2,6 +2,10 @@
 
 Continuous Control Monitoring platform built on the [OTVP](https://github.com/wharmer68/otvp-agent-sdk) (Open Trust Verification Protocol) specification. Meridian continuously evaluates IAM / Logical Access controls across multiple products and surfaces cryptographically-verified findings in a real-time dashboard.
 
+![Meridian CCM — Overview](docs/screenshot_overview.png)
+
+![Meridian CCM — Deviations](docs/screenshot_deviations.png)
+
 ## What it does
 
 An agent polls Keycloak (simulating Saviynt) every 60 seconds, runs four Logical Access controls, and writes cryptographically-signed evidence into PostgreSQL. Each run produces:
