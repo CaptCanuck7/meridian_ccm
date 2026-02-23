@@ -1,0 +1,16 @@
+# Meridian — Product / System Registry
+# Maps business products to the controls that govern them.
+
+products:
+
+  - id: P1
+    name: "Product 1"
+    owner: "Product 1 IT Team"
+    description: "Core platform covering identity lifecycle for new joiners, movers, and leavers."
+    controls: [LA.01, LA.02, LA.03]
+
+  - id: P2
+    name: "Product 2"
+    owner: "Product 2 IT Team"
+    description: "Extended platform adding privileged-access governance on top of P1 controls."
+    controls: [LA.01, LA.02, LA.03, LA.04]

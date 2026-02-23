@@ -1,0 +1,108 @@
+# ─────────────────────────────────────────────────────────────
+# Meridian — Continuous Control Monitoring (local POC)
+# Services: postgres · keycloak · ticketing · agent · dashboard
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Evidence store + Keycloak backing DB ──────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: meridian-postgres
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-meridian}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-meridian}
+      POSTGRES_DB:       meridian
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-meridian}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Identity provider (simulates Saviynt) ─────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: meridian-keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN:          ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB:          postgres
+      KC_DB_URL:      jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-meridian}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-meridian}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED:    "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Mock ticketing service (simulates ServiceNow) ─────────
+  ticketing:
+    build:
+      context: ./services/ticketing
+    container_name: meridian-ticketing
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./services/ticketing:/app
+    restart: unless-stopped
+
+  # ── Evidence collection + signing agent ───────────────────
+  agent:
+    build:
+      context: ./services/agent
+    container_name: meridian-agent
+    environment:
+      KEYCLOAK_URL:        http://keycloak:8080
+      KEYCLOAK_ADMIN:      ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASS: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      TICKETING_URL:       http://ticketing:8001
+      POSTGRES_DSN:        postgresql://${POSTGRES_USER:-meridian}:${POSTGRES_PASSWORD:-meridian}@postgres:5432/meridian
+      CONFIG_PATH:         /config/controls.yaml
+      PRODUCTS_PATH:       /config/products.yaml
+      KEY_DIR:             /keys
+    volumes:
+      - ./services/agent:/app
+      - ./config:/config:ro
+      - agent_keys:/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      ticketing:
+        condition: service_started
+    restart: unless-stopped
+
+  # ── Streamlit demo dashboard ───────────────────────────────
+  dashboard:
+    build:
+      context: ./services/dashboard
+    container_name: meridian-dashboard
+    environment:
+      POSTGRES_DSN:   postgresql://${POSTGRES_USER:-meridian}:${POSTGRES_PASSWORD:-meridian}@postgres:5432/meridian
+      CONFIG_PATH:    /config/controls.yaml
+      PRODUCTS_PATH:  /config/products.yaml
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./services/dashboard:/app
+      - ./config:/config:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  agent_keys:

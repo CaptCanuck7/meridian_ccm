@@ -1,0 +1,68 @@
+# Meridian — Control Definitions
+# Each entry maps to a check function registered in checks.py.
+#
+# severity:  critical | high | medium | low
+# status codes stored in DB: pass | fail | error
+
+agent:
+  realm: master
+  run_interval_seconds: 60       # keep short for demo; use 300+ in prod
+
+controls:
+
+  - id: LA.01
+    name: "New Access — Approval Required"
+    description: >
+      All new access grants must have an approved access request on record.
+      Accounts provisioned without an 'approvedBy' attribute indicate a
+      bypassed provisioning workflow.
+    check: new_access_no_approval
+    severity: high
+    params:
+      lookback_days: 30            # inspect accounts created in the last N days
+      required_attribute: approvedBy
+    framework_mappings:
+      soc2:     [CC6.1, CC6.3]
+      iso27001: ["A.9.2.1", "A.9.2.3"]
+
+  - id: LA.02
+    name: "Terminations — SLA Compliance"
+    description: >
+      Terminated user accounts must be disabled within the SLA window.
+      Accounts remaining active beyond the SLA are a residual-access risk.
+    check: terminations_sla
+    severity: critical
+    params:
+      sla_days: 1                  # 1 business day
+      termination_attribute: terminationRequestDate
+    framework_mappings:
+      soc2:     [CC6.2, CC6.5]
+      iso27001: ["A.9.2.6"]
+
+  - id: LA.03
+    name: "Quarterly User Access Review (UAR)"
+    description: >
+      A full User Access Review must be completed at least once per quarter
+      (90 days). Overdue reviews leave stale access unchallenged.
+    check: quarterly_uar
+    severity: high
+    params:
+      max_days_since_uar: 90
+      uar_attribute: lastUarCompletedDate
+    framework_mappings:
+      soc2:     [CC6.2, CC6.3]
+      iso27001: ["A.9.2.5"]
+
+  - id: LA.04
+    name: "Admin Access — Count and Review"
+    description: >
+      The number of privileged (admin-role) accounts must not exceed the
+      approved threshold. Excess admin accounts expand blast radius.
+    check: admin_access_count
+    severity: critical
+    params:
+      role_name: admin
+      max_admins: 3
+    framework_mappings:
+      soc2:     [CC6.1, CC6.3]
+      iso27001: ["A.9.2.3", "A.9.4.4"]
