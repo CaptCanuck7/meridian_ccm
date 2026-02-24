@@ -78,7 +78,7 @@ st.markdown(f"""
   .mono-label {{
     font-family: monospace;
     text-transform: uppercase;
-    font-size: 10px;
+    font-size: 12px;
     color: {C_MUTED};
     letter-spacing: 1.2px;
   }}
@@ -103,16 +103,16 @@ st.markdown(f"""
     border-radius: 4px;
     padding: 2px 7px;
     font-family: monospace;
-    font-size: 10px;
+    font-size: 13px;
     color: {C_TEAL};
     margin-right: 4px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
   }}
   .trust-badge {{
     display: inline-block;
     border-radius: 4px;
-    padding: 3px 10px;
-    font-size: 11px;
+    padding: 4px 12px;
+    font-size: 13px;
     font-weight: 700;
     font-family: monospace;
     letter-spacing: .5px;
@@ -120,8 +120,8 @@ st.markdown(f"""
   .claim-badge {{
     display: inline-block;
     border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 10px;
+    padding: 3px 10px;
+    font-size: 12px;
     font-weight: 700;
     font-family: monospace;
     letter-spacing: .5px;
@@ -138,13 +138,13 @@ st.markdown(f"""
   .rec-block {{
     border-left: 3px solid {C_ORANGE};
     background: rgba(240,136,62,0.08);
-    padding: 10px 14px;
+    padding: 12px 16px;
     border-radius: 0 4px 4px 0;
-    margin: 8px 0;
+    margin: 14px 0;
   }}
   .merkle-hash {{
     font-family: monospace;
-    font-size: 11px;
+    font-size: 13px;
     color: {C_MUTED};
     word-break: break-all;
   }}
@@ -314,27 +314,32 @@ def fw_badges(mappings: dict) -> str:
     return "".join(parts)
 
 
-def circular_gauge(confidence: float, color: str, size: int = 64) -> str:
+def circular_gauge(confidence: float, color: str, size: int = 150) -> str:
     """Inline SVG circular confidence gauge."""
-    r = 22
+    stroke_w = 10
+    r = size // 2 - stroke_w - 4
     cx = cy = size // 2
     circumference = 2 * math.pi * r
     pct = max(0, min(100, round(confidence * 100)))
     arc_len = (pct / 100) * circumference
     gap_len = circumference - arc_len
-    font_size = 10 if pct < 100 else 9
+    font_size = 28
+    label_size = 11
     return (
         f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" '
         f'style="display:inline-block;vertical-align:middle">'
         f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" '
-        f'stroke="{C_BORDER}" stroke-width="4"/>'
+        f'stroke="{C_BORDER}" stroke-width="{stroke_w}"/>'
         f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" '
-        f'stroke="{color}" stroke-width="4" '
+        f'stroke="{color}" stroke-width="{stroke_w}" stroke-linecap="round" '
         f'stroke-dasharray="{arc_len:.2f} {gap_len:.2f}" '
         f'transform="rotate(-90 {cx} {cy})"/>'
-        f'<text x="{cx}" y="{cy + 4}" text-anchor="middle" '
+        f'<text x="{cx}" y="{cy - 6}" text-anchor="middle" dominant-baseline="middle" '
         f'font-size="{font_size}" font-family="monospace" '
         f'fill="{color}" font-weight="bold">{pct}%</text>'
+        f'<text x="{cx}" y="{cy + font_size // 2 + 4}" text-anchor="middle" '
+        f'font-size="{label_size}" font-family="monospace" '
+        f'fill="{C_MUTED}" letter-spacing="1">CONFIDENCE</text>'
         f'</svg>'
     )
 
@@ -346,7 +351,7 @@ def confidence_bar(confidence: float, color: str) -> str:
         f'<div style="margin:8px 0">'
         f'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
         f'<span class="mono-label">CONFIDENCE</span>'
-        f'<span style="font-family:monospace;font-size:11px;color:{color}">{pct}%</span>'
+        f'<span style="font-family:monospace;font-size:13px;color:{color}">{pct}%</span>'
         f'</div>'
         f'<div style="background:{C_BORDER};border-radius:3px;height:6px">'
         f'<div style="background:{color};width:{pct}%;height:100%;border-radius:3px"></div>'
@@ -746,7 +751,7 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
     ev_summary = ed.get("evidence_summary", {})
 
     t_color = TRUST_COLORS.get(trust_lvl, C_MUTED)
-    gauge   = circular_gauge(confidence, t_color, size=64)
+    gauge   = circular_gauge(confidence, t_color)
     badge_t = trust_badge(trust_lvl)
     badge_p = prod_badge(prod_id)
     fw_html = fw_badges(fw_maps)
@@ -769,7 +774,7 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
             fw_rows_html += (
                 f'<div style="display:flex;align-items:center;gap:8px;margin:3px 0">'
                 f'<span class="fw-badge">{code}</span>'
-                f'<span style="font-size:12px;color:{C_MUTED}">{fdesc}</span>'
+                f'<span style="font-size:14px;color:{C_MUTED}">{fdesc}</span>'
                 f'</div>'
             )
 
@@ -777,13 +782,13 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
     opinions = [c.get("opinion", "") for c in claims if c.get("opinion")]
     if opinions:
         items_html = "".join(
-            f"<li style='margin:4px 0;color:{C_TEXT};font-size:13px'>{op}</li>"
+            f"<li style='margin:6px 0;color:{C_TEXT};font-size:14px'>{op}</li>"
             for op in opinions
         )
         findings_html = f'<ul style="margin:4px 0 0 0;padding-left:20px">{items_html}</ul>'
     else:
         findings_html = (
-            f'<span style="color:{C_MUTED};font-size:13px">No findings recorded.</span>'
+            f'<span style="color:{C_MUTED};font-size:14px">No findings recorded.</span>'
         )
 
     # Recommendations
@@ -791,11 +796,11 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
     recs_html = ""
     if recs:
         recs_list = "".join(
-            f"<li style='margin:3px 0;font-size:12px;color:{C_TEXT}'>{r}</li>"
+            f"<li style='margin:5px 0;font-size:14px;color:{C_TEXT}'>{r}</li>"
             for r in recs[:5]
         )
         recs_html = (
-            f'<div class="rec-block" style="margin-top:12px">'
+            f'<div class="rec-block" style="margin-top:14px">'
             f'<div class="mono-label" style="margin-bottom:6px">RECOMMENDATIONS</div>'
             f'<ul style="margin:0;padding-left:18px">{recs_list}</ul>'
             f'</div>'
@@ -804,7 +809,7 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
     conf_bar = confidence_bar(confidence, t_color)
 
     merkle_html = (
-        f'<div style="margin-top:12px;padding-top:10px;border-top:1px solid {C_BORDER}">'
+        f'<div style="margin-top:20px;padding-top:14px;border-top:1px solid {C_BORDER}">'
         f'<span class="mono-label">MERKLE ROOT</span>'
         f'<div class="merkle-hash">{merkle_rt or "—"}</div>'
         f'</div>'
@@ -812,7 +817,7 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
 
     st.markdown(f"""
 <div class="env-card" style="border-left:3px solid {t_color}">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
     <div>
       <span class="mono-label">TRUST ENVELOPE</span>&nbsp;&nbsp;{fw_html}
     </div>
@@ -822,46 +827,46 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
     </div>
   </div>
 
-  <div style="font-size:18px;font-weight:700;color:{C_TEXT};margin-bottom:6px">
+  <div style="font-size:21px;font-weight:700;color:{C_TEXT};margin-bottom:8px">
     {ctrl_id} — {ctrl_name}
   </div>
 
-  <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
     {badge_p}
-    <span style="font-family:monospace;font-size:11px;color:{C_DIM}">{env_id}…</span>
-    <span style="font-size:11px;color:{C_DIM}">{ts}</span>
+    <span style="font-family:monospace;font-size:12px;color:{C_DIM}">{env_id}…</span>
+    <span style="font-size:12px;color:{C_DIM}">{ts}</span>
   </div>
 
-  <div style="font-size:13px;color:{C_MUTED};margin-bottom:12px">{desc}</div>
+  <div style="font-size:14px;color:{C_MUTED};margin-bottom:14px">{desc}</div>
 
   {fw_rows_html}
 
-  <div style="display:flex;gap:16px;margin:12px 0;padding:10px 0;
+  <div style="display:flex;gap:20px;margin:18px 0;padding:14px 0;
     border-top:1px solid {C_BORDER};border-bottom:1px solid {C_BORDER}">
     <div style="text-align:center">
       <div class="mono-label">EVIDENCE</div>
-      <div style="font-size:20px;font-weight:700;color:{C_TEXT}">{n_ev}</div>
+      <div style="font-size:24px;font-weight:700;color:{C_TEXT};margin-top:4px">{n_ev}</div>
     </div>
     <div style="text-align:center">
       <div class="mono-label">CLAIMS</div>
-      <div style="font-size:20px;font-weight:700;color:{C_TEXT}">{n_claims}</div>
+      <div style="font-size:24px;font-weight:700;color:{C_TEXT};margin-top:4px">{n_claims}</div>
     </div>
     <div style="text-align:center">
       <div class="mono-label">SATISFIED</div>
-      <div style="font-size:20px;font-weight:700;color:{C_TEAL}">{n_satisfied}</div>
+      <div style="font-size:24px;font-weight:700;color:{C_TEAL};margin-top:4px">{n_satisfied}</div>
     </div>
     <div style="text-align:center">
       <div class="mono-label">PARTIAL</div>
-      <div style="font-size:20px;font-weight:700;color:{C_ORANGE}">{n_partial}</div>
+      <div style="font-size:24px;font-weight:700;color:{C_ORANGE};margin-top:4px">{n_partial}</div>
     </div>
     <div style="text-align:center">
       <div class="mono-label">FAILED</div>
-      <div style="font-size:20px;font-weight:700;color:{C_RED}">{n_failed}</div>
+      <div style="font-size:24px;font-weight:700;color:{C_RED};margin-top:4px">{n_failed}</div>
     </div>
   </div>
 
-  <div style="margin-bottom:8px">
-    <div class="mono-label" style="margin-bottom:6px">FINDINGS</div>
+  <div style="margin-bottom:12px">
+    <div class="mono-label" style="margin-bottom:8px">FINDINGS</div>
     {findings_html}
   </div>
 
@@ -889,7 +894,7 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
                 caveat_html = ""
                 if c_caveats:
                     items = "".join(
-                        f"<li style='color:{C_ORANGE};font-size:12px'>{cv}</li>"
+                        f"<li style='color:{C_ORANGE};font-size:13px'>{cv}</li>"
                         for cv in c_caveats
                     )
                     caveat_html = (
@@ -902,7 +907,7 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
                 rec_html = ""
                 if c_recs:
                     items = "".join(
-                        f"<li style='font-size:12px;color:{C_TEXT}'>{r}</li>"
+                        f"<li style='font-size:13px;color:{C_TEXT}'>{r}</li>"
                         for r in c_recs
                     )
                     rec_html = (
@@ -923,10 +928,10 @@ def render_envelope_card(row: pd.Series, ctrl_meta: dict) -> None:
   <div style="font-family:monospace;font-size:11px;color:{C_DIM};margin-bottom:6px">
     {c_domain}
   </div>
-  <div style="font-size:13px;font-weight:600;color:{C_TEXT};margin-bottom:4px">
+  <div style="font-size:14px;font-weight:600;color:{C_TEXT};margin-bottom:6px">
     {c_assert}
   </div>
-  <div style="font-size:13px;color:{C_MUTED}">{c_opinion}</div>
+  <div style="font-size:14px;color:{C_MUTED}">{c_opinion}</div>
   {caveat_html}
   {rec_html}
 </div>""", unsafe_allow_html=True)
@@ -1127,7 +1132,7 @@ elif page == "Deviations":
         ]
         fail_opinions = [c.get("opinion", "") for c in failing_claims if c.get("opinion")]
         fail_items = "".join(
-            f"<li style='margin:3px 0;font-size:13px;color:{C_TEXT}'>{op}</li>"
+            f"<li style='margin:6px 0;font-size:14px;color:{C_TEXT}'>{op}</li>"
             for op in fail_opinions
         )
 
@@ -1135,11 +1140,11 @@ elif page == "Deviations":
         recs_html = ""
         if recs:
             recs_list = "".join(
-                f"<li style='font-size:12px;color:{C_TEXT}'>{r}</li>"
+                f"<li style='font-size:14px;color:{C_TEXT}'>{r}</li>"
                 for r in recs[:5]
             )
             recs_html = (
-                f'<div class="rec-block" style="margin-top:12px">'
+                f'<div class="rec-block" style="margin-top:14px">'
                 f'<div class="mono-label" style="margin-bottom:6px">RECOMMENDED ACTIONS</div>'
                 f'<ul style="margin:0;padding-left:18px">{recs_list}</ul>'
                 f'</div>'
